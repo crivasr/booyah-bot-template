@@ -1,11 +1,12 @@
 const WebSocketPlus = require("websocketplus");
 const fetch = require("node-fetch");
+const { v1: uuidv1 } = require('uuid');
 require("dotenv").config();
 
 const CHANNEL_ID = "71624195"; // https://booyah.live/channels/71624195
 const ROOM_ID = "71200943"; // https://booyah.live/standalone/chatroom/71200943
 
-const DEVICE_ID = make_id();
+const DEVICE_ID = uuidv1();
 
 startBot(CHANNEL_ID, ROOM_ID);
 
@@ -25,7 +26,7 @@ function startBot(CHANNEL_ID, ROOM_ID) {
 			"sec-fetch-mode": "cors",
 			"sec-fetch-site": "same-origin",
 			"x-csrf-token": `${process.env.BOOYAH_SESSION_KEY}`,
-			"x-request-id": `web_${make_id()}`,
+			"x-request-id": `web_${uuidv1()}`,
 
 			cookie: `_gid=${process.env.GID}; datadome=${process.env.DATADOME}; session_key=${process.env.BOOYAH_SESSION_KEY}; muxData=${process.env.MUX_DATA}; _ga_T294MSDDGH=${process.env.GA_T294}; _ga=${process.env.GA}`,
 		},
@@ -89,24 +90,8 @@ function startBot(CHANNEL_ID, ROOM_ID) {
 		});
 }
 
-function random_str(length) {
-	let result = "";
-	let characters = "abcdefghijklmnopqrstuvwxyz0123456789";
-	let charactersLength = characters.length;
-	for (var i = 0; i < length; i++) {
-		result += characters[Math.floor(Math.random() * charactersLength)];
-	}
-	return result;
-}
-
-function make_id() {
-	// las ids siguen siempre el mismo patron, no se puede usar 2 veces la misma id 
-	// pero la probabilidad de que salga 2 veces la misma ID en una misma chat room es casi nula
-	return `${random_str(8)}-${random_str(4)}-${random_str(4)}-${random_str(4)}-${random_str(12)}`; 
-}
-
 function send_message(WS, msg) {
-	const clt_msg_id = `web-${make_id()}`;
+	const clt_msg_id = `web-${uuidv1()}`;
 
 	WS.send({ event: 0, data: { clt_msg_id: clt_msg_id, msg: msg } });
 }
