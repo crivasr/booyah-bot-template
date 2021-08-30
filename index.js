@@ -40,7 +40,7 @@ async function startBot(CHANNEL_ID, ROOM_ID) {
 	webSocket.on("message", (buffer) => {
 		// ws sends binary buffer instead of string or JSON
 		// we have to decode it and parse it to JSON
-		messages = decodeBufferToJSON(buffer);
+		const messages = decodeBufferToJSON(buffer);
 
 		messages.forEach(async (message) => {
 			console.log(message);
