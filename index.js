@@ -12,30 +12,18 @@ startBot(CHANNEL_ID, ROOM_ID);
 
 function startBot(CHANNEL_ID, ROOM_ID) {
 	// solicitar token para conectarse al chat, es de 1 solo uso y expira a los 5 minutos
-	// no se exactamente que parametros son obligatorios asi que deje todos
-	fetch(`https://booyah.live/api/v3/users/${process.env.BOT_UID}/chat-tokens`, {
-		headers: {
-			accept: "application/json, text/plain, */*",
-			"accept-language": "fr",
-			"booyah-session-key": `${process.env.BOOYAH_SESSION_KEY}`,
-			"content-type": "application/json",
-			"sec-ch-ua":
-				'" Not;A Brand";v="99", "Google Chrome";v="91", "Chromium";v="91"',
-			"sec-ch-ua-mobile": "?0",
-			"sec-fetch-dest": "empty",
-			"sec-fetch-mode": "cors",
-			"sec-fetch-site": "same-origin",
-			"x-csrf-token": `${process.env.BOOYAH_SESSION_KEY}`,
-			"x-request-id": `web_${uuidv1()}`,
-
-			cookie: `_gid=${process.env.GID}; datadome=${process.env.DATADOME}; session_key=${process.env.BOOYAH_SESSION_KEY}; muxData=${process.env.MUX_DATA}; _ga_T294MSDDGH=${process.env.GA_T294}; _ga=${process.env.GA}`,
-		},
-		referrer: `https://booyah.live/channels/${process.env.BOT_UID}`,
-		referrerPolicy: "strict-origin-when-cross-origin",
-		body: `{"device_id":"${DEVICE_ID}"}`,
-		method: "POST",
-		mode: "cors",
-	})
+	fetch(
+		`https://booyah.live/api/v3/users/${process.env.BOT_UID}/chat-tokens`,
+		{
+			headers: {
+				"x-csrf-token": `${process.env.BOOYAH_SESSION_KEY}`,
+				cookie: `session_key=${process.env.BOOYAH_SESSION_KEY}`,
+			},
+			referrer: `https://booyah.live/channels/${process.env.BOT_UID}`,
+			body: `{"device_id":"${DEVICE_ID}"}`,
+			method: "POST",
+		}
+	)
 		.then((response) => response.json())
 		.then((json) => {
 			// guardar token generado
