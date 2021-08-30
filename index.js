@@ -1,7 +1,9 @@
-const WebSocketPlus = require("websocketplus");
+const WebSocket = require("ws");
 const fetch = require("node-fetch");
-const { v1: uuidv1 } = require('uuid');
+const { v1: uuidv1 } = require("uuid");
 require("dotenv").config();
+
+const { MsgType, SendMsgType } = require("./types");
 
 const CHANNEL_ID = "71624195"; // https://booyah.live/channels/71624195
 const ROOM_ID = "71200943"; // https://booyah.live/standalone/chatroom/71200943
@@ -10,9 +12,81 @@ const DEVICE_ID = uuidv1();
 
 startBot(CHANNEL_ID, ROOM_ID);
 
-function startBot(CHANNEL_ID, ROOM_ID) {
-	// solicitar token para conectarse al chat, es de 1 solo uso y expira a los 5 minutos
-	fetch(
+async function startBot(CHANNEL_ID, ROOM_ID) {
+	const token = await generateToken();
+
+	// connect to chat with the generated token
+	const webSocket = new WebSocket(
+		`wss://chat.booyah.live:9511/ws/v2/chat/conns?room_id=${ROOM_ID}&uid=${process.env.BOT_UID}&device_id=${DEVICE_ID}&token=${token}`
+	);
+
+	webSocket.on("open", () => {
+		console.log(`Bot is online on room: ${ROOM_ID}, channel: ${CHANNEL_ID}`);
+
+		// Send empty message every minute to prevent disconnection
+		setInterval(function () {
+			heartbeat(webSocket);
+		}, 1000 * 60);
+	});
+
+	webSocket.on("error", (message) => {
+		console.log("error", message);
+	});
+
+	webSocket.on("close", (code) => {
+		console.log("Conection lost, error code:", code);
+	});
+
+	webSocket.on("message", (buffer) => {
+		// ws sends binary buffer instead of string or JSON
+		// we have to decode it and parse it to JSON
+		messages = decodeBufferToJSON(buffer);
+
+		messages.forEach(async (message) => {
+			console.log(message);
+			const uid = message.data.uid;
+
+			// ignore messages from the bot
+			if (uid == process.env.BOT_UID) return;
+
+			if (message.event == MsgType.CHAT) {
+				const msg = message.data.msg;
+
+				if (msg == "!ping") sendMessage(webSocket, "pong");
+			} else if (message.event == MsgType.STICKER) {
+				const sticker = message.data.sticker_id;
+
+				// send the same sticker
+				sendSticker(webSocket, sticker);
+			}
+		});
+	});
+}
+
+function sendMessage(ws, msg) {
+	ws.send(`{ "event": "${SendMsgType.CHAT}", "data": {"msg": "${msg}" } }`);
+}
+
+function sendSticker(ws, id) {
+	ws.send(
+		`{ "event": "${SendMsgType.STICKER}", "data": {"sticker_id": "${id}" } }`
+	);
+}
+
+function heartbeat(ws) {
+	console.log("heartbeat");
+	ws.send('{"msg": "" }');
+}
+
+function decodeBufferToJSON(buffer) {
+	const json = buffer.toString("utf8");
+	const jsonp = JSON.parse(json);
+	return jsonp;
+}
+
+async function generateToken() {
+	// request a one password time token that expires in 5 minutes if it's not used
+	const response = await fetch(
 		`https://booyah.live/api/v3/users/${process.env.BOT_UID}/chat-tokens`,
 		{
 			headers: {
@@ -23,63 +97,9 @@ function startBot(CHANNEL_ID, ROOM_ID) {
 			body: `{"device_id":"${DEVICE_ID}"}`,
 			method: "POST",
 		}
-	)
-		.then((response) => response.json())
-		.then((json) => {
-			// guardar token generado
-			token = json.token;
+	);
 
-			 // conectarse al chat con el token generado
-			const webSocketPlus = new WebSocketPlus(`wss://chat.booyah.live:9511/ws/v2/chat/conns?room_id=${ROOM_ID}&uid=${process.env.BOT_UID}&device_id=${DEVICE_ID}&token=${token}`,
-				{
-					openMessage: {
-						type: "subscribe",
-					},
-				}
-			);
-
-			webSocketPlus.on("open", () => {
-				console.log(`Bot is online on room: ${ROOM_ID}, channel: ${CHANNEL_ID}`);
-			});
-
-			webSocketPlus.on("error", (message) => {
-				console.log("error", message);
-			});
-
-			webSocketPlus.on("close", (message) => {
-				console.log("close", message);
-			});
-
-			webSocketPlus.on("message", (messages) => {
-				messages.forEach(async (message) => {
-					console.log(message);
-
-					// ignorar todo evento que no sea un mensaje nuevo en el chat
-					// ej: mute, ban, emote, host, etc...
-					if (message.event != 0) return; 
-
-					const msg = message.data.msg;
-					const uid = message.data.uid;
-
-					// ignorar el mensaje si es del bot
-					if (uid == process.env.BOT_UID) return; 
-
-					console.log("New message");
-
-					if (msg == "!ping") send_message(webSocketPlus, "pong");
-				});
-			});
-
-			// enviamos un mensaje vacio cada 1 minuto para que no nos desconecte del chat
-			const heartbeat = setInterval(function () {
-				console.log("heartbeat");
-				send_message(webSocketPlus, "");
-			}, 1000 * 60);
-		});
-}
-
-function send_message(WS, msg) {
-	const clt_msg_id = `web-${uuidv1()}`;
-
-	WS.send({ event: 0, data: { clt_msg_id: clt_msg_id, msg: msg } });
+	const json = await response.json();
+	const token = json.token;
+	return token;
 }
