@@ -3,15 +3,15 @@
 <p>Check <a href='https://github.com/BooyahTV/BooyahDocs'>this</a> repo for a WIP booyah's API documentation </p>
 
 ### Installation
-1. Get the user id and session id cookie of the bot
+1. Get the user id and session_key cookie of the bot
 2. Clone the repo
   ```sh
   git clone https://github.com/CamiKaseM7/booyah-bot-template.git
   ```
 3. Store the id's in `.env`
   ```env
-  BOOYAH_SESSION_KEY = MTYyOTIyxxxxxxxx
-  BOT_UID = 70724463
+  BOOYAH_SESSION_KEY = ENTER YOUR SESSION KEY
+  BOT_UID = ENTER YOUR USER ID
   ```
 4. Replace the `CHANNEL_ID` constant in `index.js` with the channel where you want to add the bot
   ```js
@@ -25,7 +25,7 @@ npm install
 ```sh
 node .
 ```
-### How to get the session-id cookie
+### How to get the session_key cookie
 You simply need to go to https://booyah.live/ and open de DevTool with `f12` or `CTRL + SHIFT + i` 
 <br>
 Then go to `Application > Cookies > https://booyah.live/` and search for `session_key`. If you press it, it will show you the full token
