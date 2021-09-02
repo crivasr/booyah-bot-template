@@ -70,7 +70,7 @@ async function startBot(CHANNEL_ID) {
 }
 
 function sendMessage(ws, msg) {
-	ws.send(`{ "event": "${SendMsgType.CHAT}", "data": {"msg": "${msg}" } }`);
+	ws.send(`{ "event": "${SendMsgType.CHAT}", "data": {"msg": "${msg.replace(/\n/g, '\\n')}" } }`);
 }
 
 function sendSticker(ws, id) {
