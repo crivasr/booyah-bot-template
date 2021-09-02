@@ -6,13 +6,19 @@ require("dotenv").config();
 const { MsgType, SendMsgType } = require("./types");
 
 const CHANNEL_ID = "71624195"; // https://booyah.live/channels/71624195
-const ROOM_ID = "71200943"; // https://booyah.live/standalone/chatroom/71200943
 
 const DEVICE_ID = uuidv1();
 
-startBot(CHANNEL_ID, ROOM_ID);
+const headers = {
+	"booyah-session-key": `${process.env.BOOYAH_SESSION_KEY}`,
+	"x-csrf-token": `${process.env.BOOYAH_SESSION_KEY}`,
+	cookie: `session_key=${process.env.BOOYAH_SESSION_KEY}`,
+};
 
-async function startBot(CHANNEL_ID, ROOM_ID) {
+startBot(CHANNEL_ID);
+
+async function startBot(CHANNEL_ID) {
+	const ROOM_ID = await getChatroomId(CHANNEL_ID)
 	const token = await generateToken();
 
 	// connect to chat with the generated token
@@ -84,16 +90,23 @@ function decodeBufferToJSON(buffer) {
 	return jsonp;
 }
 
+async function getChatroomId(channel) {
+	const response = await fetch(
+		`https://booyah.live/api/v3/channels/${channel}`, 
+		{
+			headers: headers,
+		}
+	);
+	const json = await response.json();
+	return json.channel.chatroom_id;
+}
+
 async function generateToken() {
 	// request a one password time token that expires in 5 minutes if it's not used
 	const response = await fetch(
 		`https://booyah.live/api/v3/users/${process.env.BOT_UID}/chat-tokens`,
 		{
-			headers: {
-				"x-csrf-token": `${process.env.BOOYAH_SESSION_KEY}`,
-				cookie: `session_key=${process.env.BOOYAH_SESSION_KEY}`,
-			},
-			referrer: `https://booyah.live/channels/${process.env.BOT_UID}`,
+			headers: headers,
 			body: `{"device_id":"${DEVICE_ID}"}`,
 			method: "POST",
 		}
